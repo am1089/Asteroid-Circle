@@ -1,2 +1,2 @@
-# Asteriod-Crusher
-My first game attempt
+# Asteriod-Circle
+Asteroid moves in a circle
