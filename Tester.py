@@ -8,8 +8,9 @@ backgroundColor = (0, 0, 0)
 FPS = 40
 
 class variableSize(object):
-    def __init__(self, size, revsPerSec, addRate, image):
-        self.size = size
+    def __init__(self, minSize, maxSize, revsPerSec, addRate, image):
+        self.minSize = minSize
+        self.maxSize = maxSize
         self.revsPerSec = revsPerSec
         self.addRate = addRate
         self.image = image
@@ -22,13 +23,14 @@ class variableSize(object):
         self.counter += 1
         if self.counter == self.addRate:
             self.counter = 0
+            self.Size = random.randint(self.minSize, self.maxSize)
             center_x = windowWidth
-            center_y = random.randint(0, windowHeight - self.size)
+            center_y = random.randint(0, windowHeight - self.Size)
             radius = random.randint(75, 100)
             newObject = {'rect': pygame.Rect(center_x,
                                              center_y,
-                                             self.size, self.size),
-                        'surface':pygame.transform.scale(self.image, (self.size, self.size)),
+                                             self.Size, self.Size),
+                        'surface':pygame.transform.scale(self.image, (self.Size, self.Size)),
                          'theta': self.theta,
                          'center_x': center_x,
                          'center_y': center_y,
@@ -48,8 +50,8 @@ class variableSize(object):
             x = o['radius'] * math.cos(radians)
             y = o['radius'] * math.sin(radians)
             theta = self.revsPerSec * 360 / FPS
-            o['rect'].x = x + o['center_x'] - self.size/2
-            o['rect'].y = y + o['center_y'] - self.size/2
+            o['rect'].x = x + o['center_x'] - self.Size/2
+            o['rect'].y = y + o['center_y'] - self.Size/2
             theta += o['theta']
             if (theta >= 360):
                 theta -= 360
@@ -58,7 +60,7 @@ class variableSize(object):
             
     def cullList(self):
         for o in self.list[:]:
-            if o['center_x'] + self.size < 0:
+            if o['center_x'] + self.Size < 0:
                 self.list.remove(o)
 
     def playerHit(self, playerRect):
@@ -116,7 +118,7 @@ pygame.display.update()
 waitForPlayerToPressKey()
 
 topScore = 0
-asteroids = variableSize(40, 0.25, 60, asteroidImage)
+asteroids = variableSize(20, 40, 0.25, 30, asteroidImage)
 while True:
     # Set up the start of the game.
     score = 0
