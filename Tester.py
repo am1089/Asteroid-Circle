@@ -5,55 +5,60 @@ windowWidth = 700
 windowHeight = 600
 textColor = (0, 0, 255)
 backgroundColor = (0, 0, 0)
-FPS = 30
-playerMoveRate = 5
-MaxLife = 6
-SuperMaxLife = 9
+FPS = 40
 
 class variableSize(object):
-    def __init__(self, size, center_x, center_y, radius, revsPerSec, image):
+    def __init__(self, size, revsPerSec, addRate, image):
         self.size = size
-        self.center = (int(center_x), int(center_y))
-        self.radius = radius
         self.revsPerSec = revsPerSec
+        self.addRate = addRate
         self.image = image
+        self.counter = 0
         self.theta = 90
         self.color = (255,0,0)
         self.list = []
 
     def create_add(self):
-            newObject = {'rect': pygame.Rect(self.center[0],
-                                             self.center[1],
+        self.counter += 1
+        if self.counter == self.addRate:
+            self.counter = 0
+            center_x = windowWidth
+            center_y = random.randint(0, windowHeight - self.size)
+            radius = random.randint(75, 100)
+            newObject = {'rect': pygame.Rect(center_x,
+                                             center_y,
                                              self.size, self.size),
                         'surface':pygame.transform.scale(self.image, (self.size, self.size)),
-                         'theta': self.theta,}
+                         'theta': self.theta,
+                         'center_x': center_x,
+                         'center_y': center_y,
+                         'radius': radius
+            }
             
             self.list.append(newObject)
 
 
     def drawList(self):
-        #print("Color=",self.color,"center=",self.center,"radius=",self.radius)
-        pygame.draw.circle(windowSurface, self.color, self.center, self.radius, 4);
         for o in self.list[:]:
             windowSurface.blit(o['surface'], o['rect'])
 
     def moveList(self):
         for o in self.list[:]:
             radians = math.radians(o['theta'])
-            x = self.radius * math.cos(radians)
-            y = self.radius * math.sin(radians)
-            #print('x=', x, 'y=', y)
+            x = o['radius'] * math.cos(radians)
+            y = o['radius'] * math.sin(radians)
             theta = self.revsPerSec * 360 / FPS
-            o['rect'].x = x + self.center[0] - self.size/2
-            o['rect'].y = y + self.center[1] - self.size/2
+            o['rect'].x = x + o['center_x'] - self.size/2
+            o['rect'].y = y + o['center_y'] - self.size/2
             theta += o['theta']
             if (theta >= 360):
                 theta -= 360
             o['theta'] = theta
-
+            o['center_x'] -= 3
+            
     def cullList(self):
         for o in self.list[:]:
-            if o['rect'].left < 0:
+            if o['center_x'] + self.size < 0:
                 self.list.remove(o)
 
     def playerHit(self, playerRect):
@@ -62,24 +67,6 @@ class variableSize(object):
                 self.list.remove(o)
                 return True
         return False
-    
-class constantSize(variableSize):
-    def __init__(self, Size, MinSpeed, MaxSpeed, addRate, image):
-        super().__init__(Size, Size, MinSpeed, MaxSpeed, addRate, image)
-        self.Size = Size
-
-    def create_add(self):
-        if not reverseCheat and not slowCheat:
-            self.counter += 1
-        if self.counter == self.addRate:
-            self.counter = 0
-            newObject = {'rect': pygame.Rect(windowWidth, random.randint(0, windowHeight - self.Size), self.Size, self.Size),
-                        'speed': random.randint(self.MinSpeed, self.MaxSpeed),
-                        'surface':pygame.transform.scale(self.image, (self.Size, self.Size)),}
-            
-            self.list.append(newObject)
-
-        
         
 def terminate():
     pygame.quit()
@@ -129,17 +116,14 @@ pygame.display.update()
 waitForPlayerToPressKey()
 
 topScore = 0
-asteroid = variableSize(40, windowWidth/2, windowHeight/2, 100, 0.25, asteroidImage)
+asteroids = variableSize(40, 0.25, 60, asteroidImage)
 while True:
     # Set up the start of the game.
-    asteroids = []
     score = 0
     life = 1
     moveLeft = moveRight = moveUp = moveDown = False
     reverseCheat = slowCheat = False
     pygame.mixer.music.play(-1, 0.0)
-    # Add new asteroids at the right of the screen
-    asteroid.create_add()
 
     while True: # The game loop runs while the game part is playing.
         score += 1 # Increase score.
@@ -185,14 +169,20 @@ while True:
                 if event.key == K_DOWN or event.key == K_s:
                     moveDown = False
 
+        # Add new asteroid to right of screen
+        asteroids.create_add()
+
         # Move the asteroids left
-        asteroid.moveList()
+        asteroids.moveList()
         
         # Draw the game world on the window.
         windowSurface.blit(strechedBackgroundImage, (0, 0))
 
         # Draw each asteroid.
-        asteroid.drawList()
+        asteroids.drawList()
+
+        #Delete each asteroid
+        asteroids.cullList()
         
         pygame.display.update()
 
