@@ -233,8 +233,6 @@ while True:
 
         # Check if any of the asteroids have hit the player.
         if asteroids.playerHit(playerRect):
-            score -= 10
-            life -= 1
             gotHitByAsteroid.play()
             asteroids.list.clear()
             break
