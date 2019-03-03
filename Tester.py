@@ -18,7 +18,8 @@ class variableSize(object):
         self.counter = 0
         self.color = (255,0,0)
         self.list = []
-        self.collidedList = [] # store collided objects in the collidedList to not confuse the code
+        # store collided objects in the collidedList to not confuse the code
+        self.collidedList = []
 
     def create_add(self):
         self.counter += 1
@@ -85,7 +86,8 @@ class variableSize(object):
         return False
 
     def collision(self):
-        for i, o1 in enumerate(self.list): # enumerate makes a list of tuples were one part is the index and another part is the value
+        # enumerate makes a list of tuples were one part is the index and the other is the value
+        for i, o1 in enumerate(self.list):
             for o2 in self.list[i+1:]:
                 if o1['rect'].colliderect(o2['rect']):
                     asteroidCollision.play()
@@ -159,7 +161,7 @@ while True:
     # Set up the start of the game.
     playerRect.topleft = (windowWidth / 2, windowHeight / 2)
     moveLeft = moveRight = moveUp = moveDown = False
-    pygame.mixer.music.play(-1, 0.0) # background music
+    pygame.mixer.music.play(-1, 0.0)
 
     while True: # The game loop runs while the game part is playing.
 
@@ -231,7 +233,8 @@ while True:
         if asteroids.playerHit(playerRect):
             gotHitByAsteroid.play()
             asteroids.list.clear()
-            break # Game loop ends here
+            # Game loop ends here
+            break
 
 
         mainClock.tick(FPS)
