@@ -89,7 +89,7 @@ class variableSize(object):
             for o2 in self.list[i+1:]:
                 if o1['rect'].colliderect(o2['rect']):
                     asteroidCollision.play()
-                    self.collidedList.append(o1) # adding objects to collideList
+                    self.collidedList.append(o1)
                     self.collidedList.append(o2)
 
         
@@ -138,9 +138,9 @@ gotHitByAsteroid = pygame.mixer.Sound('0477.wav')
 asteroidCollision = pygame.mixer.Sound('explosion.wav')
 
 # Set up images
-#playerImage = pygame.image.load('player-1.png')
-#strechedPlayerImage = pygame.transform.scale(playerImage, (40, 40))
-#playerRect = strechedPlayerImage.get_rect()
+playerImage = pygame.image.load('player-1.png')
+strechedPlayerImage = pygame.transform.scale(playerImage, (40, 40))
+playerRect = strechedPlayerImage.get_rect()
 asteroidImage = pygame.image.load('asteroid.png')
 backgroundImage = pygame.image.load('8-bit_Space.jpg')
 strechedBackgroundImage = pygame.transform.scale(backgroundImage, (windowWidth, windowHeight))
@@ -160,7 +160,7 @@ while True:
     # Set up the start of the game.
     score = 0
     life = 1
-    #playerRect.topleft = (windowWidth / 2, windowHeight / 2)
+    playerRect.topleft = (windowWidth / 2, windowHeight / 2)
     moveLeft = moveRight = moveUp = moveDown = False
     pygame.mixer.music.play(-1, 0.0)
 
@@ -202,14 +202,14 @@ while True:
         asteroids.create_add()
 
         # Move the player around.
-        #if moveLeft and playerRect.left > 0:
-        #    playerRect.move_ip(-1 * playerMoveRate, 0)
-        #if moveRight and playerRect.right < windowWidth:
-        #    playerRect.move_ip(playerMoveRate, 0)
-        #if moveUp and playerRect.top > 0:
-        #    playerRect.move_ip(0, -1 * playerMoveRate)
-        #if moveDown and playerRect.bottom < windowHeight:
-        #    playerRect.move_ip(0, playerMoveRate)
+        if moveLeft and playerRect.left > 0:
+            playerRect.move_ip(-1 * playerMoveRate, 0)
+        if moveRight and playerRect.right < windowWidth:
+            playerRect.move_ip(playerMoveRate, 0)
+        if moveUp and playerRect.top > 0:
+            playerRect.move_ip(0, -1 * playerMoveRate)
+        if moveDown and playerRect.bottom < windowHeight:
+            playerRect.move_ip(0, playerMoveRate)
 
         # Move the asteroids left
         asteroids.moveList()
@@ -221,7 +221,7 @@ while True:
         windowSurface.blit(strechedBackgroundImage, (0, 0))
 
         # Draw the player's rectangle.
-        #windowSurface.blit(strechedPlayerImage, playerRect)
+        windowSurface.blit(strechedPlayerImage, playerRect)
 
         # Draw each asteroid.
         asteroids.drawList()
@@ -232,19 +232,12 @@ while True:
         pygame.display.update()
 
         # Check if any of the asteroids have hit the player.
-        #if asteroids.playerHit(playerRect):
-        #    score -= 10
-        #    life -= 1
-        #    gotHitByAsteroid.play()
-        #    if life <= 0:
-                #tonic.list.clear()
-                #tank.list.clear()
-                #asteroids.list.clear()
-                #bigShroom.list.clear()
-                #smallShroom.list.clear()
-                #if score > topScore:
-                #    topScore = score # Set new top score.
-                #break
+        if asteroids.playerHit(playerRect):
+            score -= 10
+            life -= 1
+            gotHitByAsteroid.play()
+            asteroids.list.clear()
+            break
 
 
         mainClock.tick(FPS)
@@ -258,10 +251,6 @@ while True:
            (windowHeight / 3))
     drawText('Press a key to play again.', font, windowSurface,
            (windowWidth / 3) - 80, (windowHeight / 3) + 50)
-    #player.width = 35
-    #player.height = 35
-    playerMoveRate = 5
-    #playerStrechedImage = pygame.transform.scale(playerImage, (player.height, player.width))
     pygame.display.update()
     waitForPlayerToPressKey()
 
