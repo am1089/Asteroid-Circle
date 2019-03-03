@@ -7,6 +7,7 @@ textColor = (0, 0, 255)
 backgroundColor = (0, 0, 0)
 playerMoveRate = 5
 FPS = 40
+maxLife = 6
 
 class variableSize(object):
     def __init__(self, minSize, maxSize, revsPerSec, addRate, image):
@@ -18,8 +19,7 @@ class variableSize(object):
         self.counter = 0
         self.color = (255,0,0)
         self.list = []
-        # store collided objects in the collidedList to not confuse the code
-        self.collidedList = []
+        self.collidedList = []  # store collided objects in the collidedList to not confuse the code
 
     def create_add(self):
         self.counter += 1
@@ -86,15 +86,45 @@ class variableSize(object):
         return False
 
     def collision(self):
-        # enumerate makes a list of tuples were one part is the index and the other is the value
-        for i, o1 in enumerate(self.list):
+        for i, o1 in enumerate(self.list):  # makes a tuple list to compare object values using the index
             for o2 in self.list[i+1:]:
                 if o1['rect'].colliderect(o2['rect']):
-                    asteroidCollision.play()
+                    collision.play()
                     self.collidedList.append(o1)
                     self.collidedList.append(o2)
 
-        
+class constantSize(variableSize):
+    def __init__(self, Size, revsPerSec, addRate, image):
+        super().__init__(Size, Size, revsPerSec, addRate, image)
+        self.Size = Size
+
+    def create_add(self):
+        self.counter += 1
+        if self.counter == self.addRate:
+            self.counter = 0
+            self.theta = random.randint(50, 75)
+            self.minAngle = random.choice([0, 360])
+            if self.minAngle == 360:
+                self.maxAngle = 0
+            else:
+                self.maxAngle = 360
+            center_x = windowWidth
+            center_y = random.randint(0, windowHeight - self.Size)
+            radius = random.randint(75, 100)
+            newObject = {'rect': pygame.Rect(center_x,
+                                             center_y,
+                                             self.Size, self.Size),
+                        'surface':pygame.transform.scale(self.image, (self.Size, self.Size)),
+                         'theta': self.theta,
+                         'center_x': center_x,
+                         'center_y': center_y,
+                         'radius': radius,
+                         'minAngle': self.minAngle,
+                         'maxAngle': self.maxAngle
+            }
+            
+            self.list.append(newObject)
+            
 def terminate():
     pygame.quit()
     sys.exit()
@@ -137,13 +167,15 @@ font = pygame.font.SysFont(None, 48)
 pygame.mixer.music.load('background.mid')
 gameOverSound = pygame.mixer.Sound('gameover.wav')
 gotHitByAsteroid = pygame.mixer.Sound('0477.wav')
-asteroidCollision = pygame.mixer.Sound('explosion.wav')
+gotHitByTonic = pygame.mixer.Sound('smw_1-up.wav')
+collision = pygame.mixer.Sound('explosion.wav')
 
 # Set up images
 playerImage = pygame.image.load('player-1.png')
 strechedPlayerImage = pygame.transform.scale(playerImage, (40, 40))
 playerRect = strechedPlayerImage.get_rect()
 asteroidImage = pygame.image.load('asteroid.png')
+tonicImage = pygame.image.load('Energy_Tank.png')
 backgroundImage = pygame.image.load('8-bit_Space.jpg')
 strechedBackgroundImage = pygame.transform.scale(backgroundImage, (windowWidth, windowHeight))
 
@@ -157,8 +189,10 @@ pygame.display.update()
 waitForPlayerToPressKey()
 
 asteroids = variableSize(30, 40, 0.25, 40, asteroidImage)
+tonics = constantSize(35, 0.25, 50, tonicImage)
 while True:
     # Set up the start of the game.
+    life = 1
     playerRect.topleft = (windowWidth / 2, windowHeight / 2)
     moveLeft = moveRight = moveUp = moveDown = False
     pygame.mixer.music.play(-1, 0.0)
@@ -196,8 +230,9 @@ while True:
                 if event.key == K_DOWN or event.key == K_s:
                     moveDown = False
 
-        # Add new asteroid to right of screen
+        # Add new objects to right of screen
         asteroids.create_add()
+        tonics.create_add()
 
         # Move the player around.
         if moveLeft and playerRect.left > 0:
@@ -209,34 +244,47 @@ while True:
         if moveDown and playerRect.bottom < windowHeight:
             playerRect.move_ip(0, playerMoveRate)
 
-        # Move the asteroids left
+        # Move the objects left
         asteroids.moveList()
+        tonics.moveList()
         
-        # Check if Asteroids collided with each other
+        # Check if objects collided with each other
         asteroids.collision()
+        tonics.collision()
 
         # Draw the game world on the window.
         windowSurface.blit(strechedBackgroundImage, (0, 0))
 
+        # Display for player life
+        drawText('Life: %s' % (life), font, windowSurface, 10, 20)
+
         # Draw the player's rectangle.
         windowSurface.blit(strechedPlayerImage, playerRect)
 
-        # Draw each asteroid.
+        # Draw each object
         asteroids.drawList()
-
-        #Delete each asteroid
+        tonics.drawList()
+        
+        #Delete each object
         asteroids.cullList()
+        tonics.cullList()
         
         pygame.display.update()
 
         # Check if any of the asteroids have hit the player.
         if asteroids.playerHit(playerRect):
             gotHitByAsteroid.play()
-            asteroids.list.clear()
-            # Game loop ends here
-            break
+            life -= 1
+            if life <= 0:
+                tonics.list.clear()
+                asteroids.list.clear()
+                break  # Game loop ends here
 
-
+        # Check if the player has hit a tonic
+        if tonics.playerHit(playerRect):
+            gotHitByTonic.play()
+            life += 1
+        
         mainClock.tick(FPS)
         
 
