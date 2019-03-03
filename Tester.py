@@ -18,7 +18,7 @@ class variableSize(object):
         self.counter = 0
         self.color = (255,0,0)
         self.list = []
-        self.collidedList = []
+        self.collidedList = [] # store collided objects in the collidedList to not confuse the code
 
     def create_add(self):
         self.counter += 1
@@ -70,7 +70,7 @@ class variableSize(object):
             o['center_x'] -= 3
             
     def cullList(self):
-        for o in self.collidedList[:]: # collidedlList is were we store collided objects in order for the "enumerate" to not get confused
+        for o in self.collidedList[:]: 
             self.list.remove(o)
             self.collidedList.remove(o)
         for o in self.list[:]:
@@ -122,7 +122,7 @@ def drawText(text, font, surface, x, y):
     surface.blit(textobj, textrect)
 
 
-# Set up pygame and the window
+# Set up pygame, the window, and the clock
 pygame.init()
 mainClock = pygame.time.Clock()
 windowSurface = pygame.display.set_mode((windowWidth, windowHeight))
@@ -154,18 +154,14 @@ drawText('Press a key to start.', font, windowSurface,
 pygame.display.update()
 waitForPlayerToPressKey()
 
-topScore = 0
 asteroids = variableSize(30, 40, 0.25, 40, asteroidImage)
 while True:
     # Set up the start of the game.
-    score = 0
-    life = 1
     playerRect.topleft = (windowWidth / 2, windowHeight / 2)
     moveLeft = moveRight = moveUp = moveDown = False
-    pygame.mixer.music.play(-1, 0.0)
+    pygame.mixer.music.play(-1, 0.0) # background music
 
     while True: # The game loop runs while the game part is playing.
-        score += 1 # Increase score.
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -235,7 +231,7 @@ while True:
         if asteroids.playerHit(playerRect):
             gotHitByAsteroid.play()
             asteroids.list.clear()
-            break
+            break # Game loop ends here
 
 
         mainClock.tick(FPS)
@@ -244,7 +240,6 @@ while True:
     # Stop the game and show the "Game Over" screen.
     pygame.mixer.music.stop()
     gameOverSound.play()
-
     drawText('GAME OVER', font, windowSurface, (windowWidth / 3),
            (windowHeight / 3))
     drawText('Press a key to play again.', font, windowSurface,
