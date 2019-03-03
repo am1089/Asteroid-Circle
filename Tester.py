@@ -5,6 +5,7 @@ windowWidth = 700
 windowHeight = 600
 textColor = (0, 0, 255)
 backgroundColor = (0, 0, 0)
+playerMoveRate = 5
 FPS = 40
 
 class variableSize(object):
@@ -15,15 +16,21 @@ class variableSize(object):
         self.addRate = addRate
         self.image = image
         self.counter = 0
-        self.theta = 90
         self.color = (255,0,0)
         self.list = []
+        self.collidedList = []
 
     def create_add(self):
         self.counter += 1
         if self.counter == self.addRate:
             self.counter = 0
             self.Size = random.randint(self.minSize, self.maxSize)
+            self.theta = random.randint(50, 75)
+            self.minAngle = random.choice([0, 360])
+            if self.minAngle == 360:
+                self.maxAngle = 0
+            else:
+                self.maxAngle = 360
             center_x = windowWidth
             center_y = random.randint(0, windowHeight - self.Size)
             radius = random.randint(75, 100)
@@ -34,7 +41,9 @@ class variableSize(object):
                          'theta': self.theta,
                          'center_x': center_x,
                          'center_y': center_y,
-                         'radius': radius
+                         'radius': radius,
+                         'minAngle': self.minAngle,
+                         'maxAngle': self.maxAngle
             }
             
             self.list.append(newObject)
@@ -49,16 +58,21 @@ class variableSize(object):
             radians = math.radians(o['theta'])
             x = o['radius'] * math.cos(radians)
             y = o['radius'] * math.sin(radians)
-            theta = self.revsPerSec * 360 / FPS
+            theta = self.revsPerSec * (o['maxAngle'] - o['minAngle']) / FPS
             o['rect'].x = x + o['center_x'] - self.Size/2
             o['rect'].y = y + o['center_y'] - self.Size/2
             theta += o['theta']
             if (theta >= 360):
                 theta -= 360
+            if (theta <= 0):
+                theta += 360
             o['theta'] = theta
             o['center_x'] -= 3
             
     def cullList(self):
+        for o in self.collidedList[:]: # collidedlList is were we store collided objects in order for the "enumerate" to not get confused
+            self.list.remove(o)
+            self.collidedList.remove(o)
         for o in self.list[:]:
             if o['center_x'] + self.Size < 0:
                 self.list.remove(o)
@@ -69,11 +83,28 @@ class variableSize(object):
                 self.list.remove(o)
                 return True
         return False
+
+    def collision(self):
+        for i, o1 in enumerate(self.list): # enumerate makes a list of tuples were one part is the index and another part is the value
+            for o2 in self.list[i+1:]:
+                if o1['rect'].colliderect(o2['rect']):
+                    asteroidCollision.play()
+                    self.collidedList.append(o1) # adding objects to collideList
+                    self.collidedList.append(o2)
+
         
 def terminate():
     pygame.quit()
     sys.exit()
 
+def flipRotation(o):
+    if o['minAngle'] == 360:
+        o['minAngle'] = 0
+        o['maxAngle'] = 360
+    else:
+        o['minAngle'] = 360
+        o['maxAngle'] = 0
+    
 def waitForPlayerToPressKey():
     while True:
         for event in pygame.event.get():
@@ -102,8 +133,14 @@ font = pygame.font.SysFont(None, 48)
 
 # Set up sounds.
 pygame.mixer.music.load('background.mid')
+gameOverSound = pygame.mixer.Sound('gameover.wav')
+gotHitByAsteroid = pygame.mixer.Sound('0477.wav')
+asteroidCollision = pygame.mixer.Sound('explosion.wav')
 
 # Set up images
+#playerImage = pygame.image.load('player-1.png')
+#strechedPlayerImage = pygame.transform.scale(playerImage, (40, 40))
+#playerRect = strechedPlayerImage.get_rect()
 asteroidImage = pygame.image.load('asteroid.png')
 backgroundImage = pygame.image.load('8-bit_Space.jpg')
 strechedBackgroundImage = pygame.transform.scale(backgroundImage, (windowWidth, windowHeight))
@@ -118,13 +155,13 @@ pygame.display.update()
 waitForPlayerToPressKey()
 
 topScore = 0
-asteroids = variableSize(20, 40, 0.25, 30, asteroidImage)
+asteroids = variableSize(30, 40, 0.25, 40, asteroidImage)
 while True:
     # Set up the start of the game.
     score = 0
     life = 1
+    #playerRect.topleft = (windowWidth / 2, windowHeight / 2)
     moveLeft = moveRight = moveUp = moveDown = False
-    reverseCheat = slowCheat = False
     pygame.mixer.music.play(-1, 0.0)
 
     while True: # The game loop runs while the game part is playing.
@@ -135,10 +172,6 @@ while True:
                 terminate()
 
             if event.type == KEYDOWN:
-                if event.key == K_z:
-                    reverseCheat = True
-                if event.key == K_x:
-                    slowCheat = True
                 if event.key == K_LEFT or event.key == K_a:
                     moveRight = False
                     moveLeft = True
@@ -153,12 +186,6 @@ while True:
                     moveDown = True
 
             if event.type == KEYUP:
-                if event.key == K_z:
-                    reverseCheat = False
-                    score = 0
-                if event.key == K_x:
-                    slowCheat = False
-                    score = 0
                 if event.key == K_ESCAPE:
                     terminate()
 
@@ -174,11 +201,27 @@ while True:
         # Add new asteroid to right of screen
         asteroids.create_add()
 
+        # Move the player around.
+        #if moveLeft and playerRect.left > 0:
+        #    playerRect.move_ip(-1 * playerMoveRate, 0)
+        #if moveRight and playerRect.right < windowWidth:
+        #    playerRect.move_ip(playerMoveRate, 0)
+        #if moveUp and playerRect.top > 0:
+        #    playerRect.move_ip(0, -1 * playerMoveRate)
+        #if moveDown and playerRect.bottom < windowHeight:
+        #    playerRect.move_ip(0, playerMoveRate)
+
         # Move the asteroids left
         asteroids.moveList()
         
+        # Check if Asteroids collided with each other
+        asteroids.collision()
+
         # Draw the game world on the window.
         windowSurface.blit(strechedBackgroundImage, (0, 0))
+
+        # Draw the player's rectangle.
+        #windowSurface.blit(strechedPlayerImage, playerRect)
 
         # Draw each asteroid.
         asteroids.drawList()
@@ -187,6 +230,22 @@ while True:
         asteroids.cullList()
         
         pygame.display.update()
+
+        # Check if any of the asteroids have hit the player.
+        #if asteroids.playerHit(playerRect):
+        #    score -= 10
+        #    life -= 1
+        #    gotHitByAsteroid.play()
+        #    if life <= 0:
+                #tonic.list.clear()
+                #tank.list.clear()
+                #asteroids.list.clear()
+                #bigShroom.list.clear()
+                #smallShroom.list.clear()
+                #if score > topScore:
+                #    topScore = score # Set new top score.
+                #break
+
 
         mainClock.tick(FPS)
         
@@ -199,10 +258,10 @@ while True:
            (windowHeight / 3))
     drawText('Press a key to play again.', font, windowSurface,
            (windowWidth / 3) - 80, (windowHeight / 3) + 50)
-    player.width = 35
-    player.height = 35
+    #player.width = 35
+    #player.height = 35
     playerMoveRate = 5
-    playerStrechedImage = pygame.transform.scale(playerImage, (player.height, player.width))
+    #playerStrechedImage = pygame.transform.scale(playerImage, (player.height, player.width))
     pygame.display.update()
     waitForPlayerToPressKey()
 
